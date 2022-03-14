@@ -15,10 +15,10 @@ def blink(pin):
 
 while True:
     if(GPIO.input(17) == 0):
-        blink(18)
-        print("LED blinks") # button release
-        time.sleep(0.3)
-    else: 
         GPIO.output(18, 0)
         print("LED not flashing") # button pressed
+        time.sleep(0.3)
+    else: 
+        blink(18)
+        print("LED blinks") # button release
         time.sleep(0.3)
