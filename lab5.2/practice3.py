@@ -21,3 +21,7 @@ while True:
         blink(18)
         print("LED blinks") # button release
         time.sleep(0.3)
+
+
+# THIS CODE WAS USED ON A RELAY BOARD. THE RELAY BOARD MAKES A 'TICK' SOUND WHEN THE LIGHT IS BLINKING
+# THE LIGHT ON THE RELAY STARTS AS 'ON'

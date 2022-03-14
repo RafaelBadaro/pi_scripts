@@ -1,4 +1,3 @@
-#Create an infinitely long flashing light. Use an LED connected to GPIO 24.
 import RPi.GPIO as GPIO
 import time
 GPIO.cleanup()
