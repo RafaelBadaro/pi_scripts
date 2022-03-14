@@ -2,7 +2,6 @@
 import RPi.GPIO as GPIO
 import time
 
-
 GPIO.setmode(GPIO.BCM) # GPIO24
  
 def blink(pin): 
@@ -14,7 +13,7 @@ def blink(pin):
 
 
 while True:
-    blink(24)
+    blink(18)
 
 
 GPIO.cleanup()
