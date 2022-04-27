@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 import time
+from multiprocessing import Process
 GPIO.setmode(GPIO.BCM)
 
 def ultrasound():
@@ -48,10 +49,14 @@ def ultrasound():
 
 
 def step_motor():
+
+    print("Initializing Stepper Feeder")
+
     in1 = 23
     in2 = 22
     in3 = 27
     in4 = 17 
+    button1 = 24
 
     # careful lowering this, at some point you run into the mechanical limitation of how quick your motor can move
     step_sleep = 0.002
@@ -71,55 +76,68 @@ def step_motor():
                     [0,0,0,1]]
     
     # setting up
-    GPIO.setmode( GPIO.BCM )
-    GPIO.setup( in1, GPIO.OUT )
-    GPIO.setup( in2, GPIO.OUT )
-    GPIO.setup( in3, GPIO.OUT )
-    GPIO.setup( in4, GPIO.OUT )
+    GPIO.setup(in1, GPIO.OUT)
+    GPIO.setup(in2, GPIO.OUT)
+    GPIO.setup(in3, GPIO.OUT)
+    GPIO.setup(in4, GPIO.OUT)
+    GPIO.setup(button1, GPIO.IN)
     
     # initializing
-    GPIO.output( in1, GPIO.LOW )
-    GPIO.output( in2, GPIO.LOW )
-    GPIO.output( in3, GPIO.LOW )
-    GPIO.output( in4, GPIO.LOW )
-    
-    
+    GPIO.output(in1, GPIO.LOW)
+    GPIO.output(in2, GPIO.LOW)
+    GPIO.output(in3, GPIO.LOW)
+    GPIO.output(in4, GPIO.LOW)
+     
     motor_pins = [in1,in2,in3,in4]
     motor_step_counter = 0
     
     
+    def shutdown_leds():
+        GPIO.output(in1, GPIO.LOW)
+        GPIO.output(in2, GPIO.LOW)
+        GPIO.output(in3, GPIO.LOW)
+        GPIO.output(in4, GPIO.LOW)
+
     def cleanup():
-        GPIO.output( in1, GPIO.LOW )
-        GPIO.output( in2, GPIO.LOW )
-        GPIO.output( in3, GPIO.LOW )
-        GPIO.output( in4, GPIO.LOW )
+        shutdown_leds()
         GPIO.cleanup()
     
-    
-    # the meat
-    try:
-        i = 0
-        for i in range(step_count):
-            for pin in range(0, len(motor_pins)):
-                GPIO.output( motor_pins[pin], step_sequence[motor_step_counter][pin] )
-            if direction==True:
-                motor_step_counter = (motor_step_counter - 1) % 8
-            elif direction==False:
-                motor_step_counter = (motor_step_counter + 1) % 8
-            else: # defensive programming
-                print( "uh oh... direction should *always* be either True or False" )
-                cleanup()
-                exit( 1 )
-            time.sleep( step_sleep )
-    
-    except KeyboardInterrupt:
-        cleanup()
-        exit( 1 )
-    
-    cleanup()
-    exit( 0 )
+    while(True):
+
+      while(GPIO.input(button1) == 1):
+            # Rotate the motor
+        try:
+                i = 0
+                for i in range(step_count):
+                    if(GPIO.input(button1) == 0): 
+                        # If the button is released it stops
+                        shutdown_leds()
+                        break 
+                    for pin in range(0, len(motor_pins)):
+                        GPIO.output(motor_pins[pin], step_sequence[motor_step_counter][pin])
+                    if direction==True:
+                        motor_step_counter = (motor_step_counter - 1) % 8
+                    elif direction==False:
+                        motor_step_counter = (motor_step_counter + 1) % 8
+                    else: # defensive programming
+                        print( "uh oh... direction should *always* be either True or False" )
+                        cleanup()
+                        exit(1)
+                    time.sleep(step_sleep)
+            
+        except KeyboardInterrupt:
+            cleanup()
+            exit(1)
+        
+    # cleanup()
+    # exit(0)
 
 
-#ultrasound()
+# Execute the two methohds
+#p1 = Process(target=ultrasound)
+#p1.start()
+p2 = Process(target=step_motor)
+p2.start()
+#p1.join()
+p2.join()
 
-step_motor()
