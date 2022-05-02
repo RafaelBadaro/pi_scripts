@@ -140,14 +140,16 @@ def relay_pump():
     GPIO.output(pump, 1) # Turn off the pump
 
     while True:
-        if(GPIO.input(button_pump) == 0):            
-              if(GPIO.input(pump) == 1):  # If pump is off
-                  GPIO.output(pump, 0) # Turn on 
-                  print("Pump status: ON") 
-              elif(GPIO.input(pump) == 0): # If pump is on
-                  GPIO.output(pump, 1) # Turn off 
-                  print("Pump status: OFF")
-              time.sleep(0.3) 
+        if(GPIO.input(button_pump) == 0):    
+            GPIO.output(pump, 0) # Turn on 
+            print("Pump status: ON") 
+        elif (GPIO.input(pump) == 0):     
+            GPIO.output(pump, 1) # Turn off 
+            print("Pump status: OFF")
+
+        time.sleep(0.3) 
+    
+
 
 def relay_lights():
     button_light = 25
