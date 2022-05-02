@@ -129,15 +129,35 @@ def step_motor():
             cleanup()
             exit(1)
         
-    # cleanup()
-    # exit(0)
+
+def relay_pump():
+    button_pump = 26
+    light = 16 # pump
+
+    # setting up
+    GPIO.setup(button_pump, GPIO.IN)
+    GPIO.setup(light, GPIO.OUT)
+    GPIO.output(light, 1) # Turn off the light if needed
+
+    
+    while True:
+        if(GPIO.input(button_pump) == 0):
+              print("Pump pressed")             
+              if(GPIO.input(light) == 1):  # If pump is off
+                   GPIO.output(light, 0) # Turn on 
+              elif(GPIO.input(light) == 0): # If pump is on
+                  GPIO.output(light, 1) # Turn off 
+
+              time.sleep(0.3) 
+
 
 
 # Execute the two methohds
-#p1 = Process(target=ultrasound)
-#p1.start()
-p2 = Process(target=step_motor)
-p2.start()
-#p1.join()
-p2.join()
+# p1 = Process(target=ultrasound)
+# p1.start()
+# p2 = Process(target=step_motor)
+# p2.start()
+# p1.join()
+# p2.join()
+relay_pump()
 
