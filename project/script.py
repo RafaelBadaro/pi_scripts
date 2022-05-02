@@ -15,7 +15,7 @@ def ultrasound():
     try:
         while True:
             
-            print("Waiting For Sensor To Settle")
+            #print("Waiting For Sensor To Settle")
             time.sleep(0.5)
 
             GPIO.output(TRIG, GPIO.HIGH) # Setting TRIG port to high
@@ -141,23 +141,25 @@ def relay_pump():
 
     
     while True:
-        if(GPIO.input(button_pump) == 0):
-              print("Pump pressed")             
+        if(GPIO.input(button_pump) == 0):            
               if(GPIO.input(light) == 1):  # If pump is off
-                   GPIO.output(light, 0) # Turn on 
+                  GPIO.output(light, 0) # Turn on 
+                  print("Pump status: ON") 
               elif(GPIO.input(light) == 0): # If pump is on
                   GPIO.output(light, 1) # Turn off 
-
+                  print("Pump status: OFF")
               time.sleep(0.3) 
 
 
 
-# Execute the two methohds
-# p1 = Process(target=ultrasound)
-# p1.start()
-# p2 = Process(target=step_motor)
-# p2.start()
-# p1.join()
-# p2.join()
-relay_pump()
+# Execute the methods
+p1 = Process(target=ultrasound)
+p1.start()
+p2 = Process(target=step_motor)
+p2.start()
+p3 = Process(target=relay_pump)
+p3.start()
+p1.join()
+p2.join()
+p3.join()
 
