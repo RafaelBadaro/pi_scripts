@@ -132,24 +132,41 @@ def step_motor():
 
 def relay_pump():
     button_pump = 26
-    light = 16 # pump
+    pump = 16 # pump
 
     # setting up
     GPIO.setup(button_pump, GPIO.IN)
-    GPIO.setup(light, GPIO.OUT)
-    GPIO.output(light, 1) # Turn off the light if needed
+    GPIO.setup(pump, GPIO.OUT)
+    GPIO.output(pump, 1) # Turn off the pump
 
-    
     while True:
         if(GPIO.input(button_pump) == 0):            
-              if(GPIO.input(light) == 1):  # If pump is off
-                  GPIO.output(light, 0) # Turn on 
+              if(GPIO.input(pump) == 1):  # If pump is off
+                  GPIO.output(pump, 0) # Turn on 
                   print("Pump status: ON") 
-              elif(GPIO.input(light) == 0): # If pump is on
-                  GPIO.output(light, 1) # Turn off 
+              elif(GPIO.input(pump) == 0): # If pump is on
+                  GPIO.output(pump, 1) # Turn off 
                   print("Pump status: OFF")
               time.sleep(0.3) 
 
+def relay_lights():
+    button_light = 25
+    light = 8 # light
+
+     # setting up
+    GPIO.setup(button_light, GPIO.IN)
+    GPIO.setup(light, GPIO.OUT)
+    GPIO.output(light, 1) # Turn off the light
+
+    while True:
+        if(GPIO.input(button_light) == 0):            
+              if(GPIO.input(light) == 1):  # If light is off
+                  GPIO.output(light, 0) # Turn on 
+                  print("Light status: ON") 
+              elif(GPIO.input(light) == 0): # If light is on
+                  GPIO.output(light, 1) # Turn off 
+                  print("Light status: OFF")
+              time.sleep(0.3) 
 
 
 # Execute the methods
@@ -159,7 +176,9 @@ p2 = Process(target=step_motor)
 p2.start()
 p3 = Process(target=relay_pump)
 p3.start()
+p4 = Process(target=relay_lights)
+p4.start()
 p1.join()
 p2.join()
 p3.join()
-
+p4.join()
