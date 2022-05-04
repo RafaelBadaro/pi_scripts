@@ -1,6 +1,7 @@
+from ctypes import c_bool
 import RPi.GPIO as GPIO
 import time
-from multiprocessing import Process
+from multiprocessing import Process, Value
 from datetime import datetime
 GPIO.setmode(GPIO.BCM)
 
@@ -15,6 +16,7 @@ time_end_night = "06:00:00"
 # ultrasound
 TRIG = 5
 ECHO = 6
+pump_limit_reached = Value(c_bool, False)
 
 # step motor
 IN1 = 23
@@ -31,18 +33,37 @@ PUMP = 16 # pump
 BUTTON_LIGHT = 25
 LIGHT = 8 # light
 
+def setup_gpios():
+    GPIO.setup(TRIG,GPIO.OUT)
+    GPIO.setup(ECHO,GPIO.IN)
+
+    
+    GPIO.setup(IN1, GPIO.OUT)
+    GPIO.setup(IN2, GPIO.OUT)
+    GPIO.setup(IN3, GPIO.OUT)
+    GPIO.setup(IN4, GPIO.OUT)
+    GPIO.setup(BUTTON_ROTATE_STEPMOTOR, GPIO.IN)
+    GPIO.output(IN1, GPIO.LOW)
+    GPIO.output(IN2, GPIO.LOW)
+    GPIO.output(IN3, GPIO.LOW)
+    GPIO.output(IN4, GPIO.LOW)
+
+    GPIO.setup(BUTTON_PUMP, GPIO.IN)
+    GPIO.setup(PUMP, GPIO.OUT)
+
+    # setting up
+    GPIO.setup(BUTTON_LIGHT, GPIO.IN)
+    GPIO.setup(LIGHT, GPIO.OUT)
+
 def get_current_time():
       # TODO - verify time, its getting a strange time  
       time_now = datetime.now()
       time_current = time_now.strftime("%H:%M:%S")
       return time_current
 
-
 def ultrasound():
     print("Distance Measurement In Progress")
 
-    GPIO.setup(TRIG,GPIO.OUT)
-    GPIO.setup(ECHO,GPIO.IN)
     try:
         while True:
             
@@ -71,13 +92,19 @@ def ultrasound():
             
             # Round it for better visualization
             distance = round(distance, 2)
+
+            if(distance <= 4.00):
+                pump_limit_reached.value = True
+                GPIO.output(PUMP, 1) # Turn off 
+                print("Pump status: OFF")
+            else:
+                pump_limit_reached.value = False
             
             print("Distance: ",distance,"cm")
             
     except KeyboardInterrupt: # If there is a KeyboardInterrupt (when you press ctrl+c), exit the program
         print("Cleaning up!")
         GPIO.cleanup()
-
 
 def step_motor():
 
@@ -97,19 +124,6 @@ def step_motor():
                     [0,0,1,0],
                     [0,0,1,1],
                     [0,0,0,1]]
-    
-    # setting up
-    GPIO.setup(IN1, GPIO.OUT)
-    GPIO.setup(IN2, GPIO.OUT)
-    GPIO.setup(IN3, GPIO.OUT)
-    GPIO.setup(IN4, GPIO.OUT)
-    GPIO.setup(BUTTON_ROTATE_STEPMOTOR, GPIO.IN)
-    
-    # initializing
-    GPIO.output(IN1, GPIO.LOW)
-    GPIO.output(IN2, GPIO.LOW)
-    GPIO.output(IN3, GPIO.LOW)
-    GPIO.output(IN4, GPIO.LOW)
      
     motor_pins = [IN1,IN2,IN3,IN4]
     motor_step_counter = 0   
@@ -189,30 +203,24 @@ def step_motor():
 
 def relay_pump():
 
-
     # setting up
-    GPIO.setup(BUTTON_PUMP, GPIO.IN)
-    GPIO.setup(PUMP, GPIO.OUT)
     GPIO.output(PUMP, 1) # Turn off the pump
 
     while True:
-        if(GPIO.input(BUTTON_PUMP) == 0):    
-            GPIO.output(PUMP, 0) # Turn on 
-            print("Pump status: ON") 
-        elif (GPIO.input(PUMP) == 0):     
-            GPIO.output(PUMP, 1) # Turn off 
-            print("Pump status: OFF")
-
-        time.sleep(0.3) 
+        if(pump_limit_reached.value == False):
+            if(GPIO.input(BUTTON_PUMP) == 0):    
+                GPIO.output(PUMP, 0) # Turn on 
+                print("Pump status: ON") 
+            elif (GPIO.input(PUMP) == 0):     
+                GPIO.output(PUMP, 1) # Turn off 
+                print("Pump status: OFF")
+            time.sleep(0.3) 
     
 
 def relay_lights():
 
     isDuringPredefinedTime = False
 
-    # setting up
-    GPIO.setup(BUTTON_LIGHT, GPIO.IN)
-    GPIO.setup(LIGHT, GPIO.OUT)
     GPIO.output(LIGHT, 1) # Turn off the light
 
     while True:
@@ -244,14 +252,15 @@ def relay_lights():
 
 
 # Execute the methods
+setup_gpios()
 p1 = Process(target=ultrasound)
-#p1.start()
+p1.start()
 p2 = Process(target=step_motor)
 p2.start()
 p3 = Process(target=relay_pump)
-#p3.start()
+p3.start()
 p4 = Process(target=relay_lights)
-#p4.start()
+p4.start()
 p1.join()
 p2.join()
 p3.join()
