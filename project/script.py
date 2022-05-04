@@ -24,6 +24,7 @@ IN2 = 22
 IN3 = 27
 IN4 = 17 
 BUTTON_ROTATE_STEPMOTOR = 24
+BUTTON_CHANGE_DIRECTION_STEPMOTOR = 15
 
 # pump 
 BUTTON_PUMP = 26
@@ -43,6 +44,7 @@ def setup_gpios():
     GPIO.setup(IN3, GPIO.OUT)
     GPIO.setup(IN4, GPIO.OUT)
     GPIO.setup(BUTTON_ROTATE_STEPMOTOR, GPIO.IN)
+    GPIO.setup(BUTTON_CHANGE_DIRECTION_STEPMOTOR, GPIO.IN)
     GPIO.output(IN1, GPIO.LOW)
     GPIO.output(IN2, GPIO.LOW)
     GPIO.output(IN3, GPIO.LOW)
@@ -55,11 +57,13 @@ def setup_gpios():
     GPIO.setup(BUTTON_LIGHT, GPIO.IN)
     GPIO.setup(LIGHT, GPIO.OUT)
 
+
 def get_current_time():
       # TODO - verify time, its getting a strange time  
       time_now = datetime.now()
       time_current = time_now.strftime("%H:%M:%S")
       return time_current
+
 
 def ultrasound():
     print("Distance Measurement In Progress")
@@ -106,6 +110,7 @@ def ultrasound():
         print("Cleaning up!")
         GPIO.cleanup()
 
+
 def step_motor():
 
     print("Initializing Stepper Feeder")
@@ -114,7 +119,7 @@ def step_motor():
     
     step_count = 4096 # 5.625*(1/64) per step, 4096 steps is 360°
     
-    direction = False # True for clockwise, False for counter-clockwise
+    direction = False # True for counter-clockwise , False for counter-clockwise clockwise
     
     step_sequence = [[1,0,0,1],
                     [1,0,0,0],
@@ -140,8 +145,14 @@ def step_motor():
     
     while(True):
 
-      # if (button_change_direction is pressed):
-      #   direction = True
+      if(GPIO.input(BUTTON_CHANGE_DIRECTION_STEPMOTOR) == 0):
+          if(direction == False):
+              direction = True
+              print("Direction changed to: counter-clockwise")
+          else:
+              direction = False
+              print("Direction changed to: clockwise")
+          time.sleep(0.5)
 
       # Rotate pallet during certain time
       current_time = get_current_time()
@@ -265,3 +276,4 @@ p1.join()
 p2.join()
 p3.join()
 p4.join()
+
