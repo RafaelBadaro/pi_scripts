@@ -17,19 +17,19 @@ TRIG = 5
 ECHO = 6
 
 # step motor
-IN1 = 23
+IN1 = 10
 IN2 = 22
 IN3 = 27
 IN4 = 17 
-BUTTON_ROTATE_STEPMOTOR = 24
-BUTTON_CHANGE_DIRECTION_STEPMOTOR = 15
+BUTTON_ROTATE_STEPMOTOR = 15
+BUTTON_CHANGE_DIRECTION_STEPMOTOR = 25
 
 # pump 
 BUTTON_PUMP = 26
 PUMP = 16 # pump
 
 # light 
-BUTTON_LIGHT = 25
+BUTTON_LIGHT = 7
 LIGHT = 8 # light
 
 def setup_gpios():
@@ -161,7 +161,7 @@ def step_motor():
       if(current_time == time_rotate_pallet):
             try:
                 i = 0
-                for i in range(1024): # 4096 steps is 360°, so 1024 steps is 90°
+                for i in range(360): # 4096 steps is 360°, so 1024 steps is 90°
                     for pin in range(0, len(motor_pins)):
                         GPIO.output(motor_pins[pin], step_sequence[motor_step_counter][pin])
                     if direction==True:
@@ -175,10 +175,10 @@ def step_motor():
                 exit(1)
 
       # Rotate forward one pellet
-      if(GPIO.input(BUTTON_ROTATE_STEPMOTOR) == 1):
+      if(GPIO.input(BUTTON_ROTATE_STEPMOTOR) == 1):       
             try:
                 i = 0
-                for i in range(1024): # 4096 steps is 360°, so 1024 steps is 90°
+                for i in range(360): # 4096 steps is 360°, so 1024 steps is 90°
                     for pin in range(0, len(motor_pins)):
                         GPIO.output(motor_pins[pin], step_sequence[motor_step_counter][pin])
                     if direction==True:
