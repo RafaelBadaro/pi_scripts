@@ -6,10 +6,9 @@ from datetime import datetime
 GPIO.setmode(GPIO.BCM)
 
 # Times
-time_begin_night = "20:00:00"
-time_almost_midnight = "23:59:59"
-time_midnight = "00:00:00"
-time_end_night = "06:00:00"
+time_light_on_begin = "06:00:00"
+time_light_on_end = "20:00:00"
+time_rotate_pallet = "17:00:00"
 
 # GPIO's
 
@@ -38,7 +37,6 @@ def setup_gpios():
     GPIO.setup(TRIG,GPIO.OUT)
     GPIO.setup(ECHO,GPIO.IN)
 
-    
     GPIO.setup(IN1, GPIO.OUT)
     GPIO.setup(IN2, GPIO.OUT)
     GPIO.setup(IN3, GPIO.OUT)
@@ -53,13 +51,11 @@ def setup_gpios():
     GPIO.setup(BUTTON_PUMP, GPIO.IN)
     GPIO.setup(PUMP, GPIO.OUT)
 
-    # setting up
     GPIO.setup(BUTTON_LIGHT, GPIO.IN)
     GPIO.setup(LIGHT, GPIO.OUT)
 
 
 def get_current_time():
-      # TODO - verify time, its getting a strange time  
       time_now = datetime.now()
       time_current = time_now.strftime("%H:%M:%S")
       return time_current
@@ -71,14 +67,12 @@ def ultrasound():
     try:
         while True:
             
-            #print("Waiting For Sensor To Settle")
             time.sleep(0.5)
 
             GPIO.output(TRIG, GPIO.HIGH) # Setting TRIG port to high
             time.sleep(0.00001) # Start the module with a trigger pulse of 10μs on the trigger input
             GPIO.output(TRIG, GPIO.LOW) # Setting TRIG port to low
             
-
             # The pulsewidth of the echo pulse is a measure for the distance
             # Set ECHO to low
             while GPIO.input(ECHO) == GPIO.LOW:
@@ -97,16 +91,25 @@ def ultrasound():
             # Round it for better visualization
             distance = round(distance, 2)
 
-            if(distance <= 4.00):
-                pump_limit_reached.value = True
+            if(distance > 10.00):
+                GPIO.output(PUMP, 0) # Turn on 
+                print("Pump status: ON")
+            elif(distance <= 4.00):
                 GPIO.output(PUMP, 1) # Turn off 
                 print("Pump status: OFF")
             else:
-                pump_limit_reached.value = False
+                if(GPIO.input(BUTTON_PUMP) == 0):    
+                    GPIO.output(PUMP, 0) # Turn on 
+                    print("Pump status: ON") 
+                elif (GPIO.input(BUTTON_PUMP) == 1):    
+                    GPIO.output(PUMP, 1) # Turn off 
+                    print("Pump status: OFF")
+                time.sleep(0.3) 
+
             
             print("Distance: ",distance,"cm")
             
-    except KeyboardInterrupt: # If there is a KeyboardInterrupt (when you press ctrl+c), exit the program
+    except KeyboardInterrupt:
         print("Cleaning up!")
         GPIO.cleanup()
 
@@ -156,8 +159,7 @@ def step_motor():
 
       # Rotate pallet during certain time
       current_time = get_current_time()
-      if((time_begin_night <= current_time <= time_almost_midnight) or 
-           (time_midnight <= current_time <= time_end_night)):
+      if(current_time == time_rotate_pallet):
             try:
                 i = 0
                 for i in range(1024): # 4096 steps is 360°, so 1024 steps is 90°
@@ -210,56 +212,52 @@ def step_motor():
         except KeyboardInterrupt:
             cleanup()
             exit(1)
-        
-
-def relay_pump():
-
-    # setting up
-    GPIO.output(PUMP, 1) # Turn off the pump
-
-    while True:
-        if(pump_limit_reached.value == False):
-            if(GPIO.input(BUTTON_PUMP) == 0):    
-                GPIO.output(PUMP, 0) # Turn on 
-                print("Pump status: ON") 
-            elif (GPIO.input(PUMP) == 0):     
-                GPIO.output(PUMP, 1) # Turn off 
-                print("Pump status: OFF")
-            time.sleep(0.3) 
-    
-
+            
 def relay_lights():
 
-    isDuringPredefinedTime = False
+    lightOnDuringPredefinedTime = False
+    buttonWasPressed = False
 
     GPIO.output(LIGHT, 1) # Turn off the light
 
     while True:
         # Turn lights on based on time
         current_time = get_current_time()
-        if((time_begin_night <= current_time <= time_almost_midnight) or 
-           (time_midnight <= current_time <= time_end_night)):
+        if(time_light_on_begin <= current_time <= time_light_on_end):
             # If time is between the predefined times, turn on light
-            GPIO.output(LIGHT, 0) 
-            isDuringPredefinedTime = True
-            # TODO - what is the behaviour if the button is pressed during predefined times?
-        elif (isDuringPredefinedTime):
+            # If the button was not pressed we turn on the light
+            if(buttonWasPressed == False):
+                GPIO.output(LIGHT, 0) 
+                lightOnDuringPredefinedTime = True
+            else:
+                GPIO.output(LIGHT, 1)
+                lightOnDuringPredefinedTime = False
+            
+            # When button is pressed
+            if(GPIO.input(BUTTON_LIGHT) == 0):
+                if(buttonWasPressed == False):
+                    buttonWasPressed = True # Light was turned off by the user
+                else:
+                    buttonWasPressed = False # Light was turned on by the user
+                time.sleep(0.2)
+
+        elif (lightOnDuringPredefinedTime):
             # If time is not in between the predefined times 
             # and the light was turned on during predefined times, turn off light
             GPIO.output(LIGHT, 1)
-            isDuringPredefinedTime = False
+            lightOnDuringPredefinedTime = False
+        else:
+            # Button to turn light on and off
+            if(GPIO.input(BUTTON_LIGHT) == 0):            
+                if(GPIO.input(LIGHT) == 1):  # If light is off
+                    GPIO.output(LIGHT, 0) # Turn on 
+                    print("Light status: ON") 
+                elif(GPIO.input(LIGHT) == 0): # If light is on
+                    GPIO.output(LIGHT, 1) # Turn off 
+                    print("Light status: OFF")
+                time.sleep(0.3)
 
-        # Button to turn light on and off
-        if(GPIO.input(BUTTON_LIGHT) == 0):            
-              if(GPIO.input(LIGHT) == 1):  # If light is off
-                  GPIO.output(LIGHT, 0) # Turn on 
-                  print("Light status: ON") 
-              elif(GPIO.input(LIGHT) == 0): # If light is on
-                  GPIO.output(LIGHT, 1) # Turn off 
-                  print("Light status: OFF")
-              time.sleep(0.3) 
-
-
+               
 
 
 # Execute the methods
@@ -268,12 +266,8 @@ p1 = Process(target=ultrasound)
 p1.start()
 p2 = Process(target=step_motor)
 p2.start()
-p3 = Process(target=relay_pump)
-p3.start()
-p4 = Process(target=relay_lights)
-p4.start()
+p3 = Process(target=relay_lights)
 p1.join()
 p2.join()
 p3.join()
-p4.join()
 
