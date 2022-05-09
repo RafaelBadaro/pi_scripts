@@ -15,7 +15,6 @@ time_rotate_pallet = "17:00:00"
 # ultrasound
 TRIG = 5
 ECHO = 6
-pump_limit_reached = Value(c_bool, False)
 
 # step motor
 IN1 = 23
