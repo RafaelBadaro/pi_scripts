@@ -3,6 +3,15 @@ import RPi.GPIO as GPIO
 import time
 from multiprocessing import Process, Value
 from datetime import datetime
+
+import board
+import busio
+import digitalio
+import adafruit_pcd8544
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
+
 GPIO.setmode(GPIO.BCM)
 
 # Times
@@ -17,7 +26,7 @@ TRIG = 5
 ECHO = 6
 
 # step motor
-IN1 = 10
+IN1 = 9
 IN2 = 22
 IN3 = 27
 IN4 = 17 
@@ -29,8 +38,14 @@ BUTTON_PUMP = 26
 PUMP = 16 # pump
 
 # light 
-BUTTON_LIGHT = 7
-LIGHT = 8 # light
+BUTTON_LIGHT = 1
+LIGHT = 21 # light
+
+# lcd
+DC =  23
+RST = 24
+SPI_PORT = 0
+SPI_DEVICE = 0
 
 def setup_gpios():
     GPIO.setup(TRIG,GPIO.OUT)
@@ -256,7 +271,46 @@ def relay_lights():
                     print("Light status: OFF")
                 time.sleep(0.3)
 
-               
+def lcd():
+    # Initialize SPI bus
+    spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+
+    # Initialize display
+    dc = digitalio.DigitalInOut(board.D23)  # data/command
+    cs1 = digitalio.DigitalInOut(board.CE1)  # Chip select
+    reset = digitalio.DigitalInOut(board.D24)  # reset 
+    display = adafruit_pcd8544.PCD8544(spi, dc, cs1, reset, baudrate = 1000000)
+    display.bias = 4
+    display.contrast = 60
+    display.invert = True
+
+    # Clear display
+    display.fill(0)
+    display.show()
+
+    # Load default font
+    font = ImageFont.load_default()
+
+    # Get drawing object to draw on image
+    image = Image.new('1', (display.width, display.height))
+    draw = ImageDraw.Draw(image)
+    while(True):
+            lightStatus = 'ON' if GPIO.input(LIGHT) == 0 else "OFF"
+            try:
+                draw.rectangle((0, 0, display.width, display.height), outline=255, fill=255)
+                current_time = get_current_time()
+                draw.text((1,0), current_time, font=font)
+                draw.text((1,8), 'Next feeding:', font=font)
+                draw.text((1,16), time_rotate_pallet, font=font)
+                draw.text((1,24), 'Light status:', font=font)
+                draw.text((1,32), lightStatus, font=font)
+                display.image(image)
+                display.show()
+            except KeyboardInterrupt:
+                exit(1)
+
+            time.sleep(0.5)
+                
 
 # Execute the methods
 setup_gpios()
@@ -266,7 +320,9 @@ p2 = Process(target=step_motor)
 p2.start()
 p3 = Process(target=relay_lights)
 p3.start()
+p4 = Process(target=lcd)
+p4.start()
 p1.join()
 p2.join()
 p3.join()
-
+p4.join()
