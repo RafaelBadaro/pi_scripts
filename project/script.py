@@ -259,7 +259,6 @@ def relay_lights():
 
                
 
-
 # Execute the methods
 setup_gpios()
 p1 = Process(target=ultrasound)
@@ -267,6 +266,7 @@ p1.start()
 p2 = Process(target=step_motor)
 p2.start()
 p3 = Process(target=relay_lights)
+p3.start()
 p1.join()
 p2.join()
 p3.join()
