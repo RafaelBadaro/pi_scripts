@@ -239,7 +239,7 @@ def relay_lights():
                     buttonWasPressed = True # Light was turned off by the user
                 else:
                     buttonWasPressed = False # Light was turned on by the user
-                time.sleep(0.2)
+                time.sleep(0.5)
 
         elif (lightOnDuringPredefinedTime):
             # If time is not in between the predefined times 
